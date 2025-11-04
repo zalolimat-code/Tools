@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Percentage Calculator</title>
+<style>body{font-family:Arial;padding:20px;}input{width:100%;margin:5px 0;}</style>
+</head>
+<body>
+<h1>Percentage Calculator</h1>
+<input type="number" id="value" placeholder="Value">
+<input type="number" id="percent" placeholder="Percentage">
+<button onclick="calc()">Calculate</button>
+<p>Result: <span id="result"></span></p>
+<script>
+function calc(){
+  let value=parseFloat(document.getElementById('value').value);
+  let percent=parseFloat(document.getElementById('percent').value);
+  document.getElementById('result').textContent=(value*percent/100).toFixed(2);
+}
+</script>
+</body>
+</html>
