@@ -2,17 +2,18 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Wordle Clone Pro</title>
+<title>Wordle Pro Ultimate</title>
 <style>
 :root{
-  --cell:60px;
+  --cell-size:60px;
   --gap:5px;
   --green:#6aaa64;
   --yellow:#c9b458;
   --gray:#787c7e;
+  --bg:#121213;
 }
 body{
-  background:#121213;
+  background: var(--bg);
   color:#fff;
   font-family:sans-serif;
   display:flex;
@@ -24,6 +25,7 @@ h1{
   margin:10px 0;
   font-size:36px;
   color:#fff;
+  letter-spacing:5px;
 }
 .grid{
   display:grid;
@@ -32,12 +34,12 @@ h1{
 }
 .row{
   display:grid;
-  grid-template-columns: repeat(5, var(--cell));
+  grid-template-columns: repeat(var(--word-length), var(--cell-size));
   gap: var(--gap);
 }
 .cell{
-  width: var(--cell);
-  height: var(--cell);
+  width: var(--cell-size);
+  height: var(--cell-size);
   border:2px solid #3a3a3c;
   display:flex;
   justify-content:center;
@@ -63,83 +65,158 @@ h1{
   user-select:none;
   font-weight:bold;
   color:#fff;
+  min-width:30px;
+  text-align:center;
 }
 .key.correct{background:var(--green);}
-.key.present{background:var(--yellow); color:#fff;}
+.key.present{background:var(--yellow); color:#111;}
 .key.absent{background:var(--gray);}
-#message{margin-top:10px; font-weight:bold;}
-button{margin-top:10px; padding:8px 12px; border-radius:5px; cursor:pointer;}
+#controls{margin-top:10px;}
+#message{margin-top:10px;font-weight:bold;}
+button{margin:5px;padding:8px 12px;border-radius:5px;cursor:pointer;}
+.confetti-piece{
+  position:absolute;
+  width:10px;height:10px;
+  top:0; left:50%;
+  animation:fall 2s linear forwards;
+}
+@keyframes fall{
+  0%{transform:translateY(0) rotate(0deg);}
+  100%{transform:translateY(400px) rotate(720deg);}
+}
 </style>
 </head>
 <body>
-<h1>Wordle Clone</h1>
+
+<h1 id="title">WORDLE</h1>
+
+<label for="lang">Language:</label>
+<select id="lang" onchange="initGame()">
+  <option value="en">English</option>
+  <option value="ar">عربي</option>
+</select>
+
+<div id="scoreboard">Wins: 0 | Losses: 0</div>
 <div class="grid" id="grid"></div>
-<div id="keyboard"></div>
-<input type="text" id="guess" maxlength="5" placeholder="Enter 5 letters">
-<button onclick="submitGuess()">Guess</button>
-<button onclick="initGame()">Restart</button>
+<div id="controls">
+  <input type="text" id="guess" placeholder="Enter word">
+  <button onclick="submitGuess()">Guess</button>
+  <button onclick="initGame()">Restart</button>
+</div>
 <p id="message"></p>
+<div id="keyboard"></div>
+
+<audio id="sound-correct" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="sound-present" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg"></audio>
+<audio id="sound-absent" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="sound-win" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar.ogg"></audio>
+<audio id="sound-lose" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
 
 <script>
-const WORDS=["APPLE","BRAVE","CRANE","DREAM","EAGLE","FAITH","GLASS","HOUSE","INPUT","JUICE"];
-let solution,attempts,keyboardState={};
+const WORDS_EN = ["APPLE","BRAVE","CRANE","DREAM","EAGLE","FAITH","GLASS","HOUSE","INPUT","JUICE"];
+const WORDS_AR = ["بيت","قمر","نجم","قلم","كتاب","مدرس","مدينة","حديقة","شمس","طاولة"];
+let solution, attempts, lang, wins=0, losses=0;
 
 function initGame(){
+  lang=document.getElementById("lang").value;
+  const wordList = (lang==="en")?WORDS_EN:WORDS_AR;
+  solution = wordList[Math.floor(Math.random()*wordList.length)];
   attempts=0;
-  solution=WORDS[Math.floor(Math.random()*WORDS.length)];
   document.getElementById("grid").innerHTML="";
   document.getElementById("keyboard").innerHTML="";
   document.getElementById("message").textContent="";
-  keyboardState={};
-  // create 6 rows
+  document.getElementById("guess").value="";
+  document.getElementById("guess").disabled=false;
+  document.body.style.background=randomBackground();
+  document.documentElement.style.setProperty('--word-length', solution.length);
+
+  // create grid
+  const grid=document.getElementById("grid");
   for(let i=0;i<6;i++){
     const row=document.createElement("div");
     row.className="row";
-    for(let j=0;j<5;j++){
+    for(let j=0;j<solution.length;j++){
       const cell=document.createElement("div");
       cell.className="cell";
       row.appendChild(cell);
     }
-    document.getElementById("grid").appendChild(row);
+    grid.appendChild(row);
   }
   createKeyboard();
 }
 
+function randomBackground(){
+  const colors=["#121213","#1e1e2f","#1b1f24","#0f172a","#2a2a36"];
+  return colors[Math.floor(Math.random()*colors.length)];
+}
+
+function playSound(type){
+  const audio=document.getElementById('sound-'+type);
+  if(audio) audio.play();
+}
+
 function createKeyboard(){
-  const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
   const kb=document.getElementById("keyboard");
-  letters.forEach(l=>{
-    const key=document.createElement("div");
-    key.className="key";
-    key.textContent=l;
-    key.onclick=()=>{document.getElementById("guess").value+=l};
-    kb.appendChild(key);
+  const layoutEn = ["QWERTYUIOP","ASDFGHJKL","ZXCVBNM"];
+  const layoutAr = ["ضصثقفغعهخحجد","شسيبلاتنمكط","ئءؤرلاىةوزظ"];
+  const layout = (lang==="en")?layoutEn:layoutAr;
+
+  layout.forEach(row=>{
+    row.split("").forEach(l=>{
+      const key=document.createElement("div");
+      key.className="key";
+      key.textContent=l;
+      key.onclick=()=>{document.getElementById("guess").value += l};
+      kb.appendChild(key);
+    });
+    kb.appendChild(document.createElement("br"));
   });
 }
 
 function submitGuess(){
-  const input=document.getElementById("guess");
-  let guess=input.value.toUpperCase();
-  if(guess.length!==5){alert("Enter 5 letters!"); return;}
+  let guess=document.getElementById("guess").value.toUpperCase();
+  if(guess.length!==solution.length){alert("Enter "+solution.length+" letters!"); return;}
   const row=document.getElementById("grid").children[attempts];
-  for(let i=0;i<5;i++){
+  for(let i=0;i<solution.length;i++){
     const cell=row.children[i];
     cell.textContent=guess[i];
     const keyEl=[...document.getElementsByClassName("key")].find(k=>k.textContent===guess[i]);
-    if(guess[i]===solution[i]){cell.style.backgroundColor="#6aaa64";keyEl.className="key correct";}
-    else if(solution.includes(guess[i])){cell.style.backgroundColor="#c9b458";keyEl.className="key present";}
-    else{cell.style.backgroundColor="#787c7e";keyEl.className="key absent";}
+    if(guess[i]===solution[i]){cell.style.backgroundColor="#6aaa64"; keyEl?.classList.add("correct"); playSound('correct');}
+    else if(solution.includes(guess[i])){cell.style.backgroundColor="#c9b458"; keyEl?.classList.add("present"); playSound('present');}
+    else{cell.style.backgroundColor="#787c7e"; keyEl?.classList.add("absent"); playSound('absent');}
   }
   attempts++;
-  input.value="";
+  document.body.style.background=randomBackground();
+  document.getElementById("guess").value="";
   if(guess===solution){
     document.getElementById("message").textContent="🎉 You Win!";
+    document.getElementById("guess").disabled=true;
+    wins++; updateScore();
+    confetti();
+    playSound('win');
   } else if(attempts>=6){
     document.getElementById("message").textContent="Game Over! Word was "+solution;
+    document.getElementById("guess").disabled=true;
+    losses++; updateScore();
+    playSound('lose');
+  }
+}
+
+function updateScore(){document.getElementById("scoreboard").textContent=`Wins: ${wins} | Losses: ${losses}`;}
+
+function confetti(){
+  for(let i=0;i<50;i++){
+    const conf=document.createElement("div");
+    conf.className="confetti-piece";
+    conf.style.left=Math.random()*window.innerWidth+"px";
+    conf.style.background=`hsl(${Math.random()*360},100%,50%)`;
+    document.body.appendChild(conf);
+    setTimeout(()=>conf.remove(),3000);
   }
 }
 
 initGame();
 </script>
+
 </body>
 </html>
