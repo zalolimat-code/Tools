@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Word Counter</title>
+<style>
+body {font-family: Arial; padding: 20px;}
+textarea {width: 100%; height: 150px; margin-bottom: 10px;}
+</style>
+</head>
+<body>
+<h1>Word Counter</h1>
+<textarea id="text" placeholder="Type or paste text here"></textarea>
+<p>Words: <span id="words">0</span></p>
+<script>
+const textarea = document.getElementById('text');
+const wordsCount = document.getElementById('words');
+textarea.addEventListener('input', () => {
+  const text = textarea.value.trim();
+  const count = text ? text.split(/\s+/).length : 0;
+  wordsCount.textContent = count;
+});
+</script>
+</body>
+</html>
