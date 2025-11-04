@@ -1,559 +1,132 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WordWise: 5-Letter Game</title>
-    <!-- Load Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&family=Noto+Sans+Arabic:wght@400;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        /* Custom styles for the game grid and interactivity */
-        :root {
-            --font-en: 'Inter', sans-serif;
-            --font-ar: 'Noto Sans Arabic', sans-serif;
-            --color-bg: #0d1117;
-            --color-tile-border: #30363d;
-            --color-key-default: #30363d;
-            --color-present: #ca8a04; /* Yellow/Amber */
-            --color-correct: #10b981; /* Green/Emerald */
-            --color-absent: #374151; /* Dark Gray/Slate */
-        }
-
-        body {
-            background-color: var(--color-bg);
-            color: white;
-            transition: direction 0.3s;
-        }
-
-        /* Default Font (English) */
-        body[dir="ltr"] {
-            font-family: var(--font-en);
-        }
-        /* Arabic Font */
-        body[dir="rtl"] {
-            font-family: var(--font-ar);
-        }
-
-        .tile {
-            width: 100%;
-            height: 0;
-            padding-bottom: 100%; /* Makes tiles square */
-            font-size: 1.5rem;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.1s ease-out;
-            border: 2px solid var(--color-tile-border);
-            user-select: none;
-        }
-
-        /* Responsive font size adjustment */
-        @media (min-width: 640px) {
-            .tile { font-size: 2rem; }
-        }
-
-        /* Keyboard button styles */
-        .key {
-            height: 56px;
-            min-width: 30px;
-            font-size: 0.9rem;
-            font-weight: 600;
-            cursor: pointer;
-            user-select: none;
-            transition: background-color 0.15s ease-in-out, transform 0.05s ease-out;
-            background-color: var(--color-key-default);
-            color: white;
-            border-radius: 6px;
-        }
-
-        /* Feedback Colors (Must use CSS variables for dynamic application) */
-        .present {
-            background-color: var(--color-present);
-            border-color: var(--color-present);
-        }
-        .correct {
-            background-color: var(--color-correct);
-            border-color: var(--color-correct);
-        }
-        .absent {
-            background-color: var(--color-absent);
-            border-color: var(--color-absent);
-        }
-
-        .filled-tile {
-            border-color: #555c65;
-            animation: pop 0.1s ease-out;
-        }
-
-        .flip-in {
-            animation: flipIn 0.5s forwards;
-        }
-
-        /* Keyframe animations */
-        @keyframes pop {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes flipIn {
-            0% { transform: rotateX(0); background-color: var(--color-key-default); border-color: #555c65;}
-            50% { transform: rotateX(90deg); background-color: var(--color-key-default); border-color: #555c65;}
-            100% { transform: rotateX(0); }
-        }
-
-        .shake {
-            animation: shake 0.5s;
-        }
-        @keyframes shake {
-            0%, 100% { transform: translateX(0); }
-            20%, 60% { transform: translateX(-6px); }
-            40%, 80% { transform: translateX(6px); }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>Wordle Advanced</title>
+<style>
+body {
+  font-family: Arial, sans-serif;
+  text-align: center;
+  margin: 0;
+  padding: 0;
+  transition: background 0.5s ease;
+}
+header{padding:20px;background:#333;color:#fff;}
+h1{margin:10px;}
+.grid {
+  display: grid;
+  grid-template-rows: repeat(6, 60px);
+  grid-gap: 5px;
+  justify-content: center;
+  margin-top:20px;
+}
+.row {
+  display: grid;
+  grid-template-columns: repeat(5, 60px);
+  grid-gap: 5px;
+}
+.cell {
+  width: 60px;
+  height: 60px;
+  background:#fff;
+  line-height:60px;
+  font-size:28px;
+  font-weight:bold;
+  border:2px solid #ccc;
+  text-transform: uppercase;
+}
+.correct {background: green; color: #fff; border:none;}
+.present {background: gold; color:#fff; border:none;}
+.absent {background: #888; color:#fff; border:none;}
+select, input, button {padding:10px;margin:10px;font-size:16px;}
+#message {font-weight:bold;margin-top:10px;}
+</style>
 </head>
-<body class="min-h-screen flex flex-col items-center p-4">
+<body>
 
-    <!-- Header and Language Switcher -->
-    <header class="w-full max-w-lg pb-4 mb-4 border-b border-gray-700 flex items-center justify-between">
-        <h1 id="header-title" class="text-3xl font-black tracking-widest uppercase flex-1 text-center">WORDWISE</h1>
-        <div class="flex space-x-2 text-sm font-semibold">
-            <button id="lang-en" class="px-3 py-1 rounded-lg transition" onclick="setLanguage('en')">EN</button>
-            <button id="lang-ar" class="px-3 py-1 rounded-lg transition" onclick="setLanguage('ar')">عربي</button>
-        </div>
-    </header>
+<header>
+<h1>Wordle Advanced</h1>
+<label for="lang">Choose Language: </label>
+<select id="lang" onchange="initGame()">
+<option value="en">English</option>
+<option value="ar">عربي</option>
+</select>
+</header>
 
-    <!-- Message Area (Toast/Modal alternative) -->
-    <div id="message-container" class="absolute top-20 left-1/2 transform -translate-x-1/2 z-50">
-        <div id="status-message" class="px-4 py-2 bg-white text-gray-900 rounded-lg shadow-xl font-bold opacity-0 transition-opacity duration-300">
-            <!-- Messages appear here -->
-        </div>
-    </div>
+<div class="grid" id="grid"></div>
 
-    <!-- Game Board (Grid) -->
-    <main id="game-board" class="w-full max-w-sm mb-8 flex-grow">
-        <div id="grid" class="grid grid-rows-6 gap-2">
-            <!-- Tiles will be generated here by JavaScript -->
-        </div>
-    </main>
+<input type="text" id="guess" maxlength="5" placeholder="Enter 5-letter word">
+<button onclick="submitGuess()">Guess</button>
+<p id="message"></p>
 
-    <!-- Keyboard -->
-    <div id="keyboard-container" class="w-full max-w-xl pb-4">
-        <!-- Keyboard content generated by JS -->
-        <div id="keyboard" class="flex flex-col gap-1.5 p-2 bg-[#161b22] rounded-xl shadow-2xl"></div>
-    </div>
+<audio id="bgMusic" loop autoplay>
+<source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
+</audio>
 
-    <!-- JavaScript Game Logic -->
-    <script>
-        // --- Configuration and State ---
-        const WORD_LENGTH = 5;
-        const MAX_GUESSES = 6;
+<script>
+// الكلمات لكل لغة
+const WORDS_EN = ["APPLE","BRAVE","CRANE","DREAM","EAGLE","FAITH","GLASS","HOUSE","INPUT","JUICE"];
+const WORDS_AR = ["بيت","قمر","نجم","قلم","كتاب","مدرس","مدينة","حديقة","شمس","طاولة"];
 
-        const DICTIONARIES = {
-            'en': {
-                title: "WORDWISE",
-                wordList: ["APPLE", "TRAIN", "HOUSE", "PLANE", "BRICK", "CHAIR", "TABLE", "OCEAN", "FUNDS", "DREAM", "STAMP", "BLAST", "CRANE", "MIGHT", "PRIME", "SHAPE", "POWER", "CRAFT", "EAGLE"],
-                keyboardLayout: [
-                    ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"],
-                    ["A", "S", "D", "F", "G", "H", "J", "K", "L"],
-                    ["ENTER", "Z", "X", "C", "V", "B", "N", "M", "BACKSPACE"]
-                ],
-                messages: {
-                    notEnough: "Not enough letters!",
-                    notInList: "Not in word list!",
-                    win: "🎉 You guessed it! Excellent!",
-                    loss: "Game Over! The word was:",
-                    enter: "ENTER",
-                    backspace: "⌫"
-                }
-            },
-            'ar': {
-                title: "وورد وايز",
-                // 5-letter Arabic words (excluding diacritics/tanween, using base characters)
-                wordList: ["خَمْس", "ذَهَب", "كَبِير", "سَرِيع", "جَمِيل", "فَرِح", "قَلْب", "عَمَل", "كُتُب", "مَطَر", "وَلَد", "بِنْت", "سَفَر", "طَبَخ", "شَرِب"],
-                keyboardLayout: [
-                    ["ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح"],
-                    ["ش", "س", "ي", "ب", "ل", "ا", "ت", "ن", "م"],
-                    ["ENTER", "ك", "ط", "ز", "و", "ة", "ى", "ئ", "BACKSPACE"]
-                ],
-                messages: {
-                    notEnough: "أحرف غير كافية!",
-                    notInList: "ليست كلمة صحيحة!",
-                    win: "أحسنت! لقد خمنت الكلمة بنجاح! 🎉",
-                    loss: "انتهت اللعبة! الكلمة كانت:",
-                    enter: "إدخال",
-                    backspace: "حذف"
-                }
-            }
-        };
+let solution, attempts, lang;
 
-        let currentLanguage = 'en';
-        let TARGET_WORD = '';
-        let currentRow = 0;
-        let currentTile = 0;
-        let isGameOver = false;
+function initGame(){
+  lang = document.getElementById('lang').value;
+  attempts = 0;
+  solution = (lang==="en"? WORDS_EN : WORDS_AR)[Math.floor(Math.random()*10)];
+  console.log("Solution:",solution);
+  document.getElementById("grid").innerHTML="";
+  document.getElementById("message").textContent="";
+  document.body.style.background = randomColor();
+  // إنشاء الجدول
+  for(let i=0;i<6;i++){
+    let row=document.createElement("div");
+    row.className="row";
+    for(let j=0;j<5;j++){
+      let cell=document.createElement("div");
+      cell.className="cell";
+      row.appendChild(cell);
+    }
+    document.getElementById("grid").appendChild(row);
+  }
+  document.getElementById("guess").value="";
+}
 
-        const gridElement = document.getElementById('grid');
-        const keyboardElement = document.getElementById('keyboard');
-        const statusMessageElement = document.getElementById('status-message');
-        const headerTitleElement = document.getElementById('header-title');
+function randomColor(){
+  const colors = ["#ff9a9e","#a1c4fd","#fbc2eb","#cfd9df","#a6c0fe","#fccb90","#e0c3fc"];
+  return colors[Math.floor(Math.random()*colors.length)];
+}
 
-        // Initial setup
-        document.addEventListener('DOMContentLoaded', initializeGame);
+function submitGuess(){
+  let guessInput=document.getElementById("guess");
+  let guess=guessInput.value;
+  if(lang==="en") guess = guess.toUpperCase();
+  if(guess.length !== solution.length){alert("Enter "+solution.length+" letters!"); return;}
+  
+  let row=document.getElementById("grid").children[attempts];
+  for(let i=0;i<solution.length;i++){
+    let cell=row.children[i];
+    cell.textContent=guess[i];
+    if(guess[i]===solution[i]) cell.className="cell correct";
+    else if(solution.includes(guess[i])) cell.className="cell present";
+    else cell.className="cell absent";
+  }
+  attempts++;
+  guessInput.value="";
+  document.body.style.background = randomColor();
+  
+  if(guess===solution){
+    document.getElementById("message").textContent="🎉 You Win!";
+    guessInput.disabled=true;
+  } else if(attempts>=6){
+    document.getElementById("message").textContent="Game Over! Word was "+solution;
+    guessInput.disabled=true;
+  }
+}
 
-        function initializeGame() {
-            setLanguage('en'); // Start in English
-            document.addEventListener('keydown', handleKeyPress);
-            keyboardElement.addEventListener('click', handleVirtualKeyPress);
-        }
-
-        // --- Language Switching ---
-        function setLanguage(lang) {
-            currentLanguage = lang;
-            const config = DICTIONARIES[lang];
-
-            // 1. Set RTL/LTR and Font
-            document.body.dir = (lang === 'ar' ? 'rtl' : 'ltr');
-            
-            // 2. Set Header Title
-            headerTitleElement.textContent = config.title;
-
-            // 3. Update Language Buttons
-            document.getElementById('lang-en').classList.remove('bg-gray-700');
-            document.getElementById('lang-ar').classList.remove('bg-gray-700');
-            document.getElementById(`lang-${lang}`).classList.add('bg-gray-700');
-
-            // 4. Reset Game State
-            isGameOver = false;
-            currentRow = 0;
-            currentTile = 0;
-            
-            // Set a new random target word based on the new language
-            TARGET_WORD = config.wordList[Math.floor(Math.random() * config.wordList.length)].toUpperCase();
-            
-            // 5. Redraw UI
-            createGrid();
-            createKeyboard();
-            
-            console.log(`Language set to ${lang}. Target Word: ${TARGET_WORD}`);
-        }
-
-        // --- Grid Generation (Uses currentLanguage) ---
-        function createGrid() {
-            gridElement.innerHTML = '';
-            // Tailwind class for RTL grid container (used by all rows)
-            const gridFlowClass = currentLanguage === 'ar' ? 'flex-row-reverse' : 'flex-row'; 
-
-            for (let r = 0; r < MAX_GUESSES; r++) {
-                // Ensure tiles are drawn in the correct flow for the language
-                const row = document.createElement('div');
-                row.className = `grid grid-cols-5 gap-2`;
-                row.setAttribute('data-row', r);
-                for (let c = 0; c < WORD_LENGTH; c++) {
-                    const tileContainer = document.createElement('div');
-                    tileContainer.className = 'tile-container';
-                    const tile = document.createElement('div');
-                    tile.className = 'tile rounded-lg';
-                    // We still use c for internal indexing (0-4), but CSS handles the visual flow
-                    tile.setAttribute('data-col', c); 
-                    tileContainer.appendChild(tile);
-                    row.appendChild(tileContainer);
-                }
-                gridElement.appendChild(row);
-            }
-        }
-
-        // --- Keyboard Generation (Uses currentLanguage) ---
-        function createKeyboard() {
-            keyboardElement.innerHTML = '';
-            const config = DICTIONARIES[currentLanguage];
-            const layout = config.keyboardLayout;
-
-            layout.forEach((rowKeys, rowIndex) => {
-                const rowDiv = document.createElement('div');
-                rowDiv.className = 'flex justify-center gap-1.5';
-                
-                // Add spacer to center the second row
-                if (rowIndex === 1) {
-                    const spacer = document.createElement('div');
-                    spacer.className = 'w-1/24';
-                    rowDiv.appendChild(spacer);
-                }
-
-                rowKeys.forEach(key => {
-                    const button = document.createElement('button');
-                    button.classList.add('key');
-                    button.setAttribute('data-key', key);
-
-                    if (key === 'ENTER') {
-                        button.classList.add('w-[14%]', 'text-sm');
-                        button.textContent = config.messages.enter;
-                    } else if (key === 'BACKSPACE') {
-                        button.classList.add('w-[14%]', 'text-sm');
-                        button.textContent = config.messages.backspace;
-                    } else {
-                        button.classList.add('w-1/12');
-                        button.textContent = key;
-                    }
-                    rowDiv.appendChild(button);
-                });
-
-                // Add spacer to center the second row
-                if (rowIndex === 1) {
-                    const spacer = document.createElement('div');
-                    spacer.className = 'w-1/24';
-                    rowDiv.appendChild(spacer);
-                }
-
-                keyboardElement.appendChild(rowDiv);
-            });
-        }
-
-
-        // --- Input Handlers ---
-
-        // Handles both physical keyboard (Latin keys) and virtual keyboard clicks
-        function handleKeyPress(event) {
-            if (isGameOver) return;
-            let key = event.key;
-
-            // Normalize key for physical keyboard:
-            if (key === 'Enter') key = 'ENTER';
-            if (key === 'Backspace' || key === 'Delete') key = 'BACKSPACE';
-            
-            key = key.toUpperCase();
-
-            // Check if key is a valid letter (A-Z for physical keyboard or a virtual key)
-            // Note: Physical Arabic typing is complex to detect universally, so we rely on virtual keys for Arabic letters.
-            const isLetter = key.length === 1 && /[A-Z]/.test(key);
-
-            if (key === 'ENTER') {
-                checkGuess();
-            } else if (key === 'BACKSPACE') {
-                deleteLetter();
-            } else if (isLetter) {
-                // Only allow Latin letters from physical keyboard if the language is English
-                if (currentLanguage === 'en') {
-                    addLetter(key);
-                }
-            }
-        }
-
-        // Only handles virtual keyboard clicks
-        function handleVirtualKeyPress(event) {
-            if (isGameOver) return;
-            const button = event.target.closest('button.key');
-            if (!button) return;
-
-            const key = button.dataset.key;
-
-            if (key === 'ENTER') {
-                checkGuess();
-            } else if (key === 'BACKSPACE') {
-                deleteLetter();
-            } else if (key.length === 1) {
-                // If it's a single character from the virtual keyboard (Latin or Arabic)
-                addLetter(key);
-            }
-        }
-
-
-        // --- Core Game Logic ---
-        function addLetter(letter) {
-            if (currentTile < WORD_LENGTH) {
-                const tile = getTile(currentRow, currentTile);
-                tile.textContent = letter;
-                tile.classList.add('filled-tile');
-                currentTile++;
-            }
-        }
-
-        function deleteLetter() {
-            if (currentTile > 0) {
-                currentTile--;
-                const tile = getTile(currentRow, currentTile);
-                tile.textContent = '';
-                tile.classList.remove('filled-tile');
-                // Remove potential shake class
-                getCurrentRowElement().classList.remove('shake');
-            }
-        }
-
-        function checkGuess() {
-            const config = DICTIONARIES[currentLanguage];
-
-            if (currentTile < WORD_LENGTH) {
-                showMessage(config.messages.notEnough, 1000);
-                shakeRow(currentRow);
-                return;
-            }
-
-            const currentGuess = getCurrentGuess();
-            
-            // Simple validation check (can be improved with a proper word list check)
-            const isValid = config.wordList.includes(currentGuess);
-            
-            // The word list check is disabled for simplicity, but can be re-enabled:
-            // if (!isValid) {
-            //     showMessage(config.messages.notInList, 1000);
-            //     shakeRow(currentRow);
-            //     return;
-            // }
-
-            processGuess(currentGuess);
-
-            if (currentGuess === TARGET_WORD) {
-                handleWin();
-            } else if (currentRow === MAX_GUESSES - 1) {
-                handleLoss();
-            } else {
-                // Move to the next row
-                currentRow++;
-                currentTile = 0;
-            }
-        }
-
-        function processGuess(guess) {
-            const rowElement = getCurrentRowElement();
-            const tiles = Array.from(rowElement.querySelectorAll('.tile'));
-
-            // 1. Clean the target word (remove any optional diacritics/ligatures if necessary, though simplified lists are used here)
-            const target = TARGET_WORD;
-
-            // 2. Count letter occurrences in the target word
-            const targetMap = {};
-            for (const char of target) {
-                targetMap[char] = (targetMap[char] || 0) + 1;
-            }
-
-            // 3. Mark CORRECT (Green) letters first
-            for (let i = 0; i < WORD_LENGTH; i++) {
-                if (guess[i] === target[i]) {
-                    tiles[i].setAttribute('data-state', 'correct');
-                    targetMap[guess[i]]--;
-                }
-            }
-
-            // 4. Mark PRESENT (Yellow) and ABSENT (Gray)
-            for (let i = 0; i < WORD_LENGTH; i++) {
-                const tileState = tiles[i].getAttribute('data-state');
-
-                if (tileState === 'correct') {
-                    applyTileStyle(tiles[i], 'correct', i);
-                    updateKeyStyle(guess[i], 'correct');
-                    continue;
-                }
-
-                if (target.includes(guess[i]) && targetMap[guess[i]] > 0) {
-                    tiles[i].setAttribute('data-state', 'present');
-                    targetMap[guess[i]]--;
-                    applyTileStyle(tiles[i], 'present', i);
-                    updateKeyStyle(guess[i], 'present');
-                } else {
-                    tiles[i].setAttribute('data-state', 'absent');
-                    applyTileStyle(tiles[i], 'absent', i);
-                    updateKeyStyle(guess[i], 'absent');
-                }
-            }
-        }
-
-        function applyTileStyle(tile, stateClass, index) {
-            // Adjust animation index order for Arabic (RTL) vs English (LTR)
-            let delayIndex = currentLanguage === 'ar' ? WORD_LENGTH - 1 - index : index;
-
-            setTimeout(() => {
-                tile.classList.add('flip-in', stateClass);
-            }, delayIndex * 250); // Delay flip animation
-        }
-
-        // --- UI Updates and Helpers ---
-        function updateKeyStyle(keyLetter, newState) {
-            // Find the key button using its data-key attribute
-            const keyButton = document.querySelector(`button[data-key="${keyLetter}"]`);
-            if (!keyButton) return;
-
-            // Define priority: correct > present > absent
-            const priority = { 'correct': 3, 'present': 2, 'absent': 1, 'default': 0 };
-            const currentState = keyButton.dataset.state || 'default';
-
-            if (priority[newState] > priority[currentState]) {
-                keyButton.classList.remove('correct', 'present', 'absent');
-                keyButton.classList.add(newState);
-                keyButton.dataset.state = newState;
-            }
-        }
-
-        function getCurrentRowElement() {
-            return document.querySelector(`div[data-row="${currentRow}"]`);
-        }
-
-        function getTile(r, c) {
-            // The nth-child selector works based on the DOM order (0-4), regardless of RTL/LTR direction
-            return document.querySelector(`div[data-row="${r}"] .tile-container:nth-child(${c + 1}) .tile`);
-        }
-
-        function getCurrentGuess() {
-            let guess = '';
-            for (let i = 0; i < WORD_LENGTH; i++) {
-                guess += getTile(currentRow, i).textContent;
-            }
-            return guess;
-        }
-
-        function showMessage(text, duration = 2000) {
-            statusMessageElement.textContent = text;
-            statusMessageElement.classList.remove('opacity-0');
-            statusMessageElement.classList.add('opacity-100');
-
-            // Hide the message after the duration
-            setTimeout(() => {
-                statusMessageElement.classList.remove('opacity-100');
-                statusMessageElement.classList.add('opacity-0');
-            }, duration);
-        }
-
-        function shakeRow(row) {
-            const rowElement = document.querySelector(`div[data-row="${row}"]`);
-            rowElement.classList.add('shake');
-            setTimeout(() => {
-                rowElement.classList.remove('shake');
-            }, 500);
-        }
-
-        // --- Game End Handlers ---
-        function handleWin() {
-            isGameOver = true;
-            const config = DICTIONARIES[currentLanguage];
-
-            // Bounce animation
-            const tiles = Array.from(getCurrentRowElement().querySelectorAll('.tile'));
-            tiles.forEach((tile, index) => {
-                setTimeout(() => {
-                    tile.style.transform = 'translateY(-10px)';
-                    setTimeout(() => {
-                        tile.style.transform = 'translateY(0)';
-                    }, 150);
-                }, index * 100 + 1000); 
-            });
-
-            setTimeout(() => {
-                showMessage(config.messages.win, 3000);
-            }, 1500);
-        }
-
-        function handleLoss() {
-            isGameOver = true;
-            const config = DICTIONARIES[currentLanguage];
-
-            setTimeout(() => {
-                showMessage(`${config.messages.loss} ${TARGET_WORD}`, 4000);
-            }, 1000);
-        }
-
-    </script>
+// بدء اللعبة أول مرة
+initGame();
+</script>
 
 </body>
 </html>
-
