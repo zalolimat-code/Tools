@@ -6,52 +6,59 @@
 <style>
 :root {
   --cell-size: 70px;
-  --gap: 5px;
+  --cell-gap: 8px;
+  --font-family: 'Arial', sans-serif;
+  --bg-color: #f0f4f8;
+  --cell-bg: #fff;
+  --correct: #4caf50;
+  --present: #ffeb3b;
+  --absent: #9e9e9e;
+  --text-color: #111;
+  --keyboard-bg: #ddd;
+  --keyboard-text: #111;
 }
 body {
-  font-family: Arial, sans-serif;
-  text-align: center;
+  font-family: var(--font-family);
+  background: var(--bg-color);
   margin: 0;
   padding: 0;
-  overflow-x: hidden;
+  text-align: center;
   transition: background 1s ease;
 }
 header {
   padding: 20px;
-  color: #fff;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 10px;
-  font-size: 24px;
+  font-size: 32px;
   font-weight: bold;
+  color: var(--text-color);
+  position: relative;
+  overflow: hidden;
 }
-header span.animated {
+header span.letter {
   display: inline-block;
-  animation: float 1s infinite alternate;
+  animation: float 1s ease-in-out infinite alternate;
 }
 @keyframes float {
-  0% {transform: translateY(0px);}
+  0% {transform: translateY(0);}
   100% {transform: translateY(-10px);}
 }
 .grid {
   display: grid;
-  grid-gap: var(--gap);
+  gap: var(--cell-gap);
   justify-content: center;
-  margin-top: 20px;
+  margin: 20px auto;
 }
 .row {
   display: grid;
-  grid-gap: var(--gap);
+  gap: var(--cell-gap);
   justify-content: center;
 }
 .cell {
   width: var(--cell-size);
   height: var(--cell-size);
-  background: #fff;
-  display:flex;
-  justify-content:center;
-  align-items:center;
+  background: var(--cell-bg);
+  display: flex;
+  justify-content: center;
+  align-items: center;
   font-size: 28px;
   font-weight: bold;
   border-radius: 10px;
@@ -59,16 +66,25 @@ header span.animated {
   text-transform: uppercase;
   transition: all 0.3s ease;
 }
-.correct {background: #4caf50; color: #fff; transform: scale(1.2);}
-.present {background: #ffeb3b; color:#333; transform: scale(1.1);}
-.absent {background: #9e9e9e; color:#fff; transform: scale(1);}
-.keyboard {margin-top:20px; display:flex; flex-wrap: wrap; justify-content:center; gap:5px;}
-.key {padding:10px 15px; border-radius:5px; background:#ddd; cursor:pointer; user-select:none;}
-.key.correct{background:#4caf50; color:#fff;}
-.key.present{background:#ffeb3b; color:#333;}
-.key.absent{background:#9e9e9e; color:#fff;}
-#message {margin-top:10px; font-weight:bold; font-size:18px;}
-#scoreboard {margin-top:10px; font-size:16px;}
+.cell.correct {background: var(--correct); color: #fff; transform: scale(1.2);}
+.cell.present {background: var(--present); color: #111; transform: scale(1.1);}
+.cell.absent {background: var(--absent); color: #fff; transform: scale(1);}
+#keyboard {margin-top: 20px; display:flex; flex-wrap: wrap; justify-content:center; gap:5px;}
+.key {
+  padding: 12px 15px;
+  border-radius: 5px;
+  background: var(--keyboard-bg);
+  color: var(--keyboard-text);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.3s ease;
+}
+.key.correct {background: var(--correct); color:#fff;}
+.key.present {background: var(--present); color:#111;}
+.key.absent {background: var(--absent); color:#fff;}
+#controls {margin-top:10px;}
+#message {margin-top:10px;font-weight:bold;font-size:18px;}
+#scoreboard {margin-top:10px;font-size:16px;}
 .confetti-piece {
   position: absolute;
   width: 10px; height: 10px;
@@ -80,11 +96,12 @@ header span.animated {
   0% {transform: translateY(0) rotate(0deg);}
   100% {transform: translateY(400px) rotate(720deg);}
 }
+button{padding:10px 15px;margin:5px;font-size:16px;border-radius:5px;}
 </style>
 </head>
 <body>
 
-<header id="title">Wordle Pro Ultimate</header>
+<header id="title">WORDLE</header>
 
 <div>
 <label for="lang">Language:</label>
@@ -96,10 +113,15 @@ header span.animated {
 
 <div id="scoreboard">Wins: 0 | Losses: 0</div>
 <div class="grid" id="grid"></div>
+
+<div id="controls">
 <input type="text" id="guess" placeholder="Enter word">
 <button onclick="submitGuess()">Guess</button>
+<button onclick="initGame()">Restart</button>
+</div>
+
 <p id="message"></p>
-<div class="keyboard" id="keyboard"></div>
+<div id="keyboard"></div>
 
 <audio id="sound-correct" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
 <audio id="sound-present" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg"></audio>
@@ -124,12 +146,14 @@ function initGame(){
   document.getElementById("keyboard").innerHTML="";
   document.getElementById("message").textContent="";
   document.getElementById("guess").disabled=false;
-  document.getElementById("title").textContent = solution.length + "-Letter Word Wordle";
   document.body.style.background = randomBackground();
   
+  // animate title letters
+  const title = document.getElementById("title");
+  title.innerHTML = Array.from("WORDLE").map(c=>`<span class="letter">${c}</span>`).join("");
+
   // Create grid
   const grid = document.getElementById("grid");
-  grid.style.gridTemplateRows = `repeat(6, var(--cell-size))`;
   for(let i=0;i<6;i++){
     const row = document.createElement("div");
     row.className="row";
@@ -147,23 +171,14 @@ function initGame(){
 
 function randomBackground(){
   const colors = [
-    "linear-gradient(to right, #ff9a9e, #fad0c4)",
-    "linear-gradient(to right, #a1c4fd, #c2e9fb)",
-    "linear-gradient(to right, #fbc2eb, #a6c1ee)",
-    "linear-gradient(to right, #fccb90, #d57eeb)",
-    "linear-gradient(to right, #e0c3fc, #8ec5fc)"
+    "#f0f4f8","#e0f7fa","#fff9c4","#f3e5f5","#dcedc8"
   ];
   return colors[Math.floor(Math.random()*colors.length)];
 }
 
 function playSound(type){
-  switch(type){
-    case 'correct': document.getElementById('sound-correct').play(); break;
-    case 'present': document.getElementById('sound-present').play(); break;
-    case 'absent': document.getElementById('sound-absent').play(); break;
-    case 'win': document.getElementById('sound-win').play(); break;
-    case 'lose': document.getElementById('sound-lose').play(); break;
-  }
+  const audio=document.getElementById('sound-'+type);
+  if(audio) audio.play();
 }
 
 function createKeyboard(){
@@ -173,6 +188,7 @@ function createKeyboard(){
     const key = document.createElement("div");
     key.className="key";
     key.textContent=l;
+    key.onclick = ()=>{document.getElementById("guess").value += l};
     kb.appendChild(key);
   });
 }
@@ -183,24 +199,22 @@ function submitGuess(){
   if(lang==="en") guess=guess.toUpperCase();
   if(guess.length!==solution.length){alert("Enter "+solution.length+" letters!"); return;}
   
-  let row=document.getElementById("grid").children[attempts];
+  const row=document.getElementById("grid").children[attempts];
   for(let i=0;i<solution.length;i++){
     const cell=row.children[i];
     cell.textContent=guess[i];
-    let keyEl = [...document.getElementsByClassName("key")].find(k=>k.textContent===guess[i]);
+    const keyEl = [...document.getElementsByClassName("key")].find(k=>k.textContent===guess[i]);
     if(guess[i]===solution[i]){ 
       cell.className="cell correct"; 
-      keyEl?.classList.add("correct");
+      keyEl?.classList.add("correct"); 
       playSound('correct');
-    }
-    else if(solution.includes(guess[i])){ 
+    } else if(solution.includes(guess[i])){ 
       cell.className="cell present"; 
-      keyEl?.classList.add("present");
+      keyEl?.classList.add("present"); 
       playSound('present');
-    }
-    else { 
+    } else { 
       cell.className="cell absent"; 
-      keyEl?.classList.add("absent");
+      keyEl?.classList.add("absent"); 
       playSound('absent');
     }
   }
@@ -211,39 +225,31 @@ function submitGuess(){
   if(guess===solution){
     document.getElementById("message").textContent="🎉 You Win!";
     document.getElementById("guess").disabled=true;
-    wins++;
-    updateScore();
+    wins++; updateScore();
     playSound('win');
     confetti();
   } else if(attempts>=6){
     document.getElementById("message").textContent="Game Over! Word was "+solution;
     document.getElementById("guess").disabled=true;
-    losses++;
-    updateScore();
+    losses++; updateScore();
     playSound('lose');
   }
 }
 
 function updateScore(){
-  document.getElementById("scoreboard").textContent = `Wins: ${wins} | Losses: ${losses}`;
+  document.getElementById("scoreboard").textContent=`Wins: ${wins} | Losses: ${losses}`;
 }
 
 function confetti(){
   for(let i=0;i<50;i++){
-    const conf = document.createElement("div");
+    const conf=document.createElement("div");
     conf.className="confetti-piece";
-    conf.style.left = Math.random()*window.innerWidth+"px";
-    conf.style.background = `hsl(${Math.random()*360}, 100%, 50%)`;
+    conf.style.left=Math.random()*window.innerWidth+"px";
+    conf.style.background=`hsl(${Math.random()*360},100%,50%)`;
     document.body.appendChild(conf);
-    setTimeout(()=>conf.remove(), 3000);
+    setTimeout(()=>conf.remove(),3000);
   }
 }
-
-// Title animation
-setInterval(()=>{
-  const title = document.getElementById("title");
-  title.innerHTML = Array.from(title.textContent).map(c=>`<span class="animated">${c}</span>`).join("");
-},2000);
 
 initGame();
 </script>
