@@ -2,63 +2,78 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Wordle Advanced</title>
+<title>Wordle Advanced Pro</title>
 <style>
 body {
   font-family: Arial, sans-serif;
   text-align: center;
   margin: 0;
   padding: 0;
-  transition: background 0.5s ease;
+  transition: background 1s ease;
 }
-header{padding:20px;background:#333;color:#fff;}
-h1{margin:10px;}
+header{
+  padding:20px;
+  background:#333;
+  color:#fff;
+  display:flex;
+  justify-content: center;
+  align-items: center;
+  gap:10px;
+}
+h1{margin:10px; font-size:28px;}
 .grid {
   display: grid;
-  grid-template-rows: repeat(6, 60px);
+  grid-template-rows: repeat(6, 70px);
   grid-gap: 5px;
   justify-content: center;
   margin-top:20px;
 }
 .row {
   display: grid;
-  grid-template-columns: repeat(5, 60px);
+  grid-template-columns: repeat(5, 70px);
   grid-gap: 5px;
 }
 .cell {
-  width: 60px;
-  height: 60px;
+  width:70px;
+  height:70px;
   background:#fff;
-  line-height:60px;
+  line-height:70px;
   font-size:28px;
   font-weight:bold;
   border:2px solid #ccc;
   text-transform: uppercase;
+  transition: all 0.3s ease;
 }
-.correct {background: green; color: #fff; border:none;}
-.present {background: gold; color:#fff; border:none;}
-.absent {background: #888; color:#fff; border:none;}
+.correct {background: green; color: #fff; border:none; transform: scale(1.2);}
+.present {background: gold; color:#fff; border:none; transform: scale(1.2);}
+.absent {background: #888; color:#fff; border:none; transform: scale(1.1);}
 select, input, button {padding:10px;margin:10px;font-size:16px;}
-#message {font-weight:bold;margin-top:10px;}
+#message {font-weight:bold;margin-top:10px; font-size:18px;}
 </style>
 </head>
 <body>
 
 <header>
-<h1>Wordle Advanced</h1>
-<label for="lang">Choose Language: </label>
+<h1>Wordle Pro</h1>
+<label for="lang">Choose Language:</label>
 <select id="lang" onchange="initGame()">
-<option value="en">English</option>
-<option value="ar">عربي</option>
+  <option value="en">English</option>
+  <option value="ar">عربي</option>
 </select>
 </header>
 
 <div class="grid" id="grid"></div>
 
-<input type="text" id="guess" maxlength="5" placeholder="Enter 5-letter word">
+<input type="text" id="guess" maxlength="5" placeholder="Enter word">
 <button onclick="submitGuess()">Guess</button>
 <p id="message"></p>
 
+<!-- أصوات -->
+<audio id="sound-correct" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="sound-present" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg"></audio>
+<audio id="sound-absent" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
+<audio id="sound-win" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
+<audio id="sound-lose" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
 <audio id="bgMusic" loop autoplay>
 <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
 </audio>
@@ -74,11 +89,11 @@ function initGame(){
   lang = document.getElementById('lang').value;
   attempts = 0;
   solution = (lang==="en"? WORDS_EN : WORDS_AR)[Math.floor(Math.random()*10)];
-  console.log("Solution:",solution);
   document.getElementById("grid").innerHTML="";
   document.getElementById("message").textContent="";
-  document.body.style.background = randomColor();
-  // إنشاء الجدول
+  document.getElementById("guess").disabled=false;
+  document.body.style.background = randomBackground();
+  
   for(let i=0;i<6;i++){
     let row=document.createElement("div");
     row.className="row";
@@ -92,9 +107,25 @@ function initGame(){
   document.getElementById("guess").value="";
 }
 
-function randomColor(){
-  const colors = ["#ff9a9e","#a1c4fd","#fbc2eb","#cfd9df","#a6c0fe","#fccb90","#e0c3fc"];
+function randomBackground(){
+  const colors = [
+    "linear-gradient(to right, #ff9a9e, #fad0c4)",
+    "linear-gradient(to right, #a1c4fd, #c2e9fb)",
+    "linear-gradient(to right, #fbc2eb, #a6c1ee)",
+    "linear-gradient(to right, #fccb90, #d57eeb)",
+    "linear-gradient(to right, #e0c3fc, #8ec5fc)"
+  ];
   return colors[Math.floor(Math.random()*colors.length)];
+}
+
+function playSound(type){
+  switch(type){
+    case 'correct': document.getElementById('sound-correct').play(); break;
+    case 'present': document.getElementById('sound-present').play(); break;
+    case 'absent': document.getElementById('sound-absent').play(); break;
+    case 'win': document.getElementById('sound-win').play(); break;
+    case 'lose': document.getElementById('sound-lose').play(); break;
+  }
 }
 
 function submitGuess(){
@@ -107,26 +138,35 @@ function submitGuess(){
   for(let i=0;i<solution.length;i++){
     let cell=row.children[i];
     cell.textContent=guess[i];
-    if(guess[i]===solution[i]) cell.className="cell correct";
-    else if(solution.includes(guess[i])) cell.className="cell present";
-    else cell.className="cell absent";
+    if(guess[i]===solution[i]){ 
+      cell.className="cell correct"; 
+      playSound('correct');
+    }
+    else if(solution.includes(guess[i])){ 
+      cell.className="cell present"; 
+      playSound('present');
+    }
+    else { 
+      cell.className="cell absent"; 
+      playSound('absent');
+    }
   }
   attempts++;
+  document.body.style.background = randomBackground();
   guessInput.value="";
-  document.body.style.background = randomColor();
   
   if(guess===solution){
     document.getElementById("message").textContent="🎉 You Win!";
-    guessInput.disabled=true;
+    document.getElementById("guess").disabled=true;
+    playSound('win');
   } else if(attempts>=6){
     document.getElementById("message").textContent="Game Over! Word was "+solution;
-    guessInput.disabled=true;
+    document.getElementById("guess").disabled=true;
+    playSound('lose');
   }
 }
 
-// بدء اللعبة أول مرة
 initGame();
 </script>
-
 </body>
 </html>
