@@ -2,252 +2,140 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Wordle Pro Ultimate</title>
+<title>Wordle Clone Pro</title>
 <style>
-:root {
-  --cell-size: 70px;
-  --cell-gap: 8px;
-  --font-family: 'Arial', sans-serif;
-  --bg-color: #f0f4f8;
-  --cell-bg: #fff;
-  --correct: #4caf50;
-  --present: #ffeb3b;
-  --absent: #9e9e9e;
-  --text-color: #111;
-  --keyboard-bg: #ddd;
-  --keyboard-text: #111;
+:root{
+  --cell:60px;
+  --gap:5px;
+  --green:#6aaa64;
+  --yellow:#c9b458;
+  --gray:#787c7e;
 }
-body {
-  font-family: var(--font-family);
-  background: var(--bg-color);
-  margin: 0;
-  padding: 0;
-  text-align: center;
-  transition: background 1s ease;
+body{
+  background:#121213;
+  color:#fff;
+  font-family:sans-serif;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:20px;
 }
-header {
-  padding: 20px;
-  font-size: 32px;
-  font-weight: bold;
-  color: var(--text-color);
-  position: relative;
-  overflow: hidden;
+h1{
+  margin:10px 0;
+  font-size:36px;
+  color:#fff;
 }
-header span.letter {
-  display: inline-block;
-  animation: float 1s ease-in-out infinite alternate;
+.grid{
+  display:grid;
+  gap: var(--gap);
+  margin:20px 0;
 }
-@keyframes float {
-  0% {transform: translateY(0);}
-  100% {transform: translateY(-10px);}
+.row{
+  display:grid;
+  grid-template-columns: repeat(5, var(--cell));
+  gap: var(--gap);
 }
-.grid {
-  display: grid;
-  gap: var(--cell-gap);
-  justify-content: center;
-  margin: 20px auto;
-}
-.row {
-  display: grid;
-  gap: var(--cell-gap);
-  justify-content: center;
-}
-.cell {
-  width: var(--cell-size);
-  height: var(--cell-size);
-  background: var(--cell-bg);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 28px;
-  font-weight: bold;
-  border-radius: 10px;
-  border: 2px solid #ccc;
-  text-transform: uppercase;
+.cell{
+  width: var(--cell);
+  height: var(--cell);
+  border:2px solid #3a3a3c;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-weight:bold;
+  font-size:24px;
+  text-transform:uppercase;
+  user-select:none;
   transition: all 0.3s ease;
 }
-.cell.correct {background: var(--correct); color: #fff; transform: scale(1.2);}
-.cell.present {background: var(--present); color: #111; transform: scale(1.1);}
-.cell.absent {background: var(--absent); color: #fff; transform: scale(1);}
-#keyboard {margin-top: 20px; display:flex; flex-wrap: wrap; justify-content:center; gap:5px;}
-.key {
-  padding: 12px 15px;
-  border-radius: 5px;
-  background: var(--keyboard-bg);
-  color: var(--keyboard-text);
-  cursor: pointer;
-  user-select: none;
-  transition: all 0.3s ease;
+#keyboard{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:5px;
+  margin-top:20px;
 }
-.key.correct {background: var(--correct); color:#fff;}
-.key.present {background: var(--present); color:#111;}
-.key.absent {background: var(--absent); color:#fff;}
-#controls {margin-top:10px;}
-#message {margin-top:10px;font-weight:bold;font-size:18px;}
-#scoreboard {margin-top:10px;font-size:16px;}
-.confetti-piece {
-  position: absolute;
-  width: 10px; height: 10px;
-  background: red;
-  top: 0; left: 50%;
-  animation: fall 2s linear forwards;
+.key{
+  padding:10px;
+  border-radius:4px;
+  background:#818384;
+  cursor:pointer;
+  user-select:none;
+  font-weight:bold;
+  color:#fff;
 }
-@keyframes fall {
-  0% {transform: translateY(0) rotate(0deg);}
-  100% {transform: translateY(400px) rotate(720deg);}
-}
-button{padding:10px 15px;margin:5px;font-size:16px;border-radius:5px;}
+.key.correct{background:var(--green);}
+.key.present{background:var(--yellow); color:#fff;}
+.key.absent{background:var(--gray);}
+#message{margin-top:10px; font-weight:bold;}
+button{margin-top:10px; padding:8px 12px; border-radius:5px; cursor:pointer;}
 </style>
 </head>
 <body>
-
-<header id="title">WORDLE</header>
-
-<div>
-<label for="lang">Language:</label>
-<select id="lang" onchange="initGame()">
-  <option value="en">English</option>
-  <option value="ar">عربي</option>
-</select>
-</div>
-
-<div id="scoreboard">Wins: 0 | Losses: 0</div>
+<h1>Wordle Clone</h1>
 <div class="grid" id="grid"></div>
-
-<div id="controls">
-<input type="text" id="guess" placeholder="Enter word">
+<div id="keyboard"></div>
+<input type="text" id="guess" maxlength="5" placeholder="Enter 5 letters">
 <button onclick="submitGuess()">Guess</button>
 <button onclick="initGame()">Restart</button>
-</div>
-
 <p id="message"></p>
-<div id="keyboard"></div>
-
-<audio id="sound-correct" src="https://actions.google.com/sounds/v1/cartoon/clang_and_wobble.ogg"></audio>
-<audio id="sound-present" src="https://actions.google.com/sounds/v1/cartoon/slide_whistle_to_drum_hit.ogg"></audio>
-<audio id="sound-absent" src="https://actions.google.com/sounds/v1/cartoon/wood_plank_flicks.ogg"></audio>
-<audio id="sound-win" src="https://actions.google.com/sounds/v1/cartoon/concussive_hit_guitar.ogg"></audio>
-<audio id="sound-lose" src="https://actions.google.com/sounds/v1/cartoon/cartoon_boing.ogg"></audio>
-<audio id="bgMusic" loop autoplay>
-<source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mpeg">
-</audio>
 
 <script>
-const WORDS_EN = ["APPLE","BRAVE","CRANE","DREAM","EAGLE","FAITH","GLASS","HOUSE","INPUT","JUICE"];
-const WORDS_AR = ["بيت","قمر","نجم","قلم","كتاب","مدرس","مدينة","حديقة","شمس","طاولة"];
-let solution, attempts, lang, wins=0, losses=0;
+const WORDS=["APPLE","BRAVE","CRANE","DREAM","EAGLE","FAITH","GLASS","HOUSE","INPUT","JUICE"];
+let solution,attempts,keyboardState={};
 
 function initGame(){
-  lang = document.getElementById('lang').value;
   attempts=0;
-  const wordList = (lang==="en")?WORDS_EN:WORDS_AR;
-  solution = wordList[Math.floor(Math.random()*wordList.length)];
+  solution=WORDS[Math.floor(Math.random()*WORDS.length)];
   document.getElementById("grid").innerHTML="";
   document.getElementById("keyboard").innerHTML="";
   document.getElementById("message").textContent="";
-  document.getElementById("guess").disabled=false;
-  document.body.style.background = randomBackground();
-  
-  // animate title letters
-  const title = document.getElementById("title");
-  title.innerHTML = Array.from("WORDLE").map(c=>`<span class="letter">${c}</span>`).join("");
-
-  // Create grid
-  const grid = document.getElementById("grid");
+  keyboardState={};
+  // create 6 rows
   for(let i=0;i<6;i++){
-    const row = document.createElement("div");
+    const row=document.createElement("div");
     row.className="row";
-    row.style.gridTemplateColumns = `repeat(${solution.length}, var(--cell-size))`;
-    for(let j=0;j<solution.length;j++){
-      const cell = document.createElement("div");
+    for(let j=0;j<5;j++){
+      const cell=document.createElement("div");
       cell.className="cell";
       row.appendChild(cell);
     }
-    grid.appendChild(row);
+    document.getElementById("grid").appendChild(row);
   }
-  
   createKeyboard();
 }
 
-function randomBackground(){
-  const colors = [
-    "#f0f4f8","#e0f7fa","#fff9c4","#f3e5f5","#dcedc8"
-  ];
-  return colors[Math.floor(Math.random()*colors.length)];
-}
-
-function playSound(type){
-  const audio=document.getElementById('sound-'+type);
-  if(audio) audio.play();
-}
-
 function createKeyboard(){
-  const kb = document.getElementById("keyboard");
-  const letters = (lang==="en")?"ABCDEFGHIJKLMNOPQRSTUVWXYZ".split(""):solution.split("");
+  const letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+  const kb=document.getElementById("keyboard");
   letters.forEach(l=>{
-    const key = document.createElement("div");
+    const key=document.createElement("div");
     key.className="key";
     key.textContent=l;
-    key.onclick = ()=>{document.getElementById("guess").value += l};
+    key.onclick=()=>{document.getElementById("guess").value+=l};
     kb.appendChild(key);
   });
 }
 
 function submitGuess(){
-  let guessInput=document.getElementById("guess");
-  let guess=guessInput.value;
-  if(lang==="en") guess=guess.toUpperCase();
-  if(guess.length!==solution.length){alert("Enter "+solution.length+" letters!"); return;}
-  
+  const input=document.getElementById("guess");
+  let guess=input.value.toUpperCase();
+  if(guess.length!==5){alert("Enter 5 letters!"); return;}
   const row=document.getElementById("grid").children[attempts];
-  for(let i=0;i<solution.length;i++){
+  for(let i=0;i<5;i++){
     const cell=row.children[i];
     cell.textContent=guess[i];
-    const keyEl = [...document.getElementsByClassName("key")].find(k=>k.textContent===guess[i]);
-    if(guess[i]===solution[i]){ 
-      cell.className="cell correct"; 
-      keyEl?.classList.add("correct"); 
-      playSound('correct');
-    } else if(solution.includes(guess[i])){ 
-      cell.className="cell present"; 
-      keyEl?.classList.add("present"); 
-      playSound('present');
-    } else { 
-      cell.className="cell absent"; 
-      keyEl?.classList.add("absent"); 
-      playSound('absent');
-    }
+    const keyEl=[...document.getElementsByClassName("key")].find(k=>k.textContent===guess[i]);
+    if(guess[i]===solution[i]){cell.style.backgroundColor="#6aaa64";keyEl.className="key correct";}
+    else if(solution.includes(guess[i])){cell.style.backgroundColor="#c9b458";keyEl.className="key present";}
+    else{cell.style.backgroundColor="#787c7e";keyEl.className="key absent";}
   }
   attempts++;
-  document.body.style.background=randomBackground();
-  guessInput.value="";
-  
+  input.value="";
   if(guess===solution){
     document.getElementById("message").textContent="🎉 You Win!";
-    document.getElementById("guess").disabled=true;
-    wins++; updateScore();
-    playSound('win');
-    confetti();
   } else if(attempts>=6){
     document.getElementById("message").textContent="Game Over! Word was "+solution;
-    document.getElementById("guess").disabled=true;
-    losses++; updateScore();
-    playSound('lose');
-  }
-}
-
-function updateScore(){
-  document.getElementById("scoreboard").textContent=`Wins: ${wins} | Losses: ${losses}`;
-}
-
-function confetti(){
-  for(let i=0;i<50;i++){
-    const conf=document.createElement("div");
-    conf.className="confetti-piece";
-    conf.style.left=Math.random()*window.innerWidth+"px";
-    conf.style.background=`hsl(${Math.random()*360},100%,50%)`;
-    document.body.appendChild(conf);
-    setTimeout(()=>conf.remove(),3000);
   }
 }
 
