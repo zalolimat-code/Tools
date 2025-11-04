@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Currency Converter</title>
+<style>body{font-family:Arial;padding:20px;}input,select{width:100%;margin:5px 0;}</style>
+</head>
+<body>
+<h1>Currency Converter</h1>
+<input type="number" id="amount" placeholder="Amount">
+<select id="from">
+<option value="1">USD</option>
+<option value="0.91">EUR</option>
+<option value="0.0081">JPY</option>
+</select>
+<select id="to">
+<option value="1">USD</option>
+<option value="0.91">EUR</option>
+<option value="0.0081">JPY</option>
+</select>
+<button onclick="convert()">Convert</button>
+<p>Result: <span id="result"></span></p>
+<script>
+function convert(){
+  let amt=parseFloat(document.getElementById('amount').value);
+  let from=parseFloat(document.getElementById('from').value);
+  let to=parseFloat(document.getElementById('to').value);
+  document.getElementById('result').textContent=(amt*to/from).toFixed(2);
+}
+</script>
+</body>
+</html>
