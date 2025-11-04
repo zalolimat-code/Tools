@@ -1,68 +1,435 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Wordle Game</title>
-<style>
-body{font-family:Arial, sans-serif;padding:20px;text-align:center;background:#f0f0f0;}
-h1{color:#333;}
-.grid{display:grid;grid-template-rows:repeat(6,50px);grid-gap:5px;justify-content:center;}
-.row{display:grid;grid-template-columns:repeat(5,50px);grid-gap:5px;}
-.cell{width:50px;height:50px;background:#fff;line-height:50px;font-size:24px;font-weight:bold;border:2px solid #ccc;text-transform:uppercase;}
-.correct{background:green;color:#fff;border:none;}
-.present{background:gold;color:#fff;border:none;}
-.absent{background:#888;color:#fff;border:none;}
-input{margin-top:20px;width:200px;font-size:18px;text-align:center;}
-button{padding:10px 20px;margin-left:10px;font-size:16px;}
-#message{margin-top:10px;font-weight:bold;}
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordWise: The 5-Letter Guessing Game</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the game grid and interactivity */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d1117; /* Dark background for a professional look */
+        }
+        .tile {
+            width: 100%;
+            height: 0;
+            padding-bottom: 100%; /* Makes tiles square */
+            font-size: 1.5rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s ease-out;
+            border: 2px solid #30363d; /* Subtle border for empty tiles */
+            user-select: none;
+        }
+
+        /* Responsive font size adjustment */
+        @media (min-width: 640px) {
+            .tile {
+                font-size: 2rem;
+            }
+        }
+
+        /* Keyboard button styles */
+        .key {
+            height: 56px;
+            min-width: 30px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.15s ease-in-out, transform 0.05s ease-out;
+            background-color: #30363d; /* Default key color */
+            color: white;
+            border-radius: 6px;
+        }
+
+        /* Feedback Colors (The core of the Wordle design) */
+        .present {
+            background-color: #ca8a04; /* Yellow/Amber for PRESENT */
+            border-color: #ca8a04;
+        }
+        .correct {
+            background-color: #10b981; /* Green/Emerald for CORRECT */
+            border-color: #10b981;
+        }
+        .absent {
+            background-color: #374151; /* Dark Gray/Slate for ABSENT */
+            border-color: #374151;
+        }
+
+        .filled-tile {
+            border-color: #555c65; /* Border for tile with a letter */
+            animation: pop 0.1s ease-out;
+        }
+
+        .flip-in {
+            animation: flipIn 0.5s forwards;
+        }
+
+        /* Keyframe animations for visual polish */
+        @keyframes pop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes flipIn {
+            0% { transform: rotateX(0); background-color: #30363d; border-color: #555c65;}
+            50% { transform: rotateX(90deg); background-color: #30363d; border-color: #555c65;}
+            100% { transform: rotateX(0); }
+        }
+
+        .shake {
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+    </style>
 </head>
-<body>
-<h1>Wordle Game</h1>
-<div class="grid" id="grid"></div>
-<input type="text" id="guess" maxlength="5" placeholder="Enter 5-letter word">
-<button onclick="submitGuess()">Guess</button>
-<p id="message"></p>
+<body class="min-h-screen flex flex-col items-center p-4 text-white">
 
-<script>
-const WORDS = ["APPLE","BRAVE","CRANE","DREAM","EAGLE","FAITH","GLASS","HOUSE","INPUT","JUICE"];
-let solution = WORDS[Math.floor(Math.random()*WORDS.length)];
-let attempts = 0;
+    <!-- Header -->
+    <header class="w-full max-w-lg pb-4 mb-4 border-b border-gray-700">
+        <h1 class="text-3xl font-black text-center tracking-widest uppercase">WordWise</h1>
+    </header>
 
-const grid = document.getElementById("grid");
-for(let i=0;i<6;i++){
-  let row=document.createElement("div");
-  row.className="row";
-  for(let j=0;j<5;j++){
-    let cell=document.createElement("div");
-    cell.className="cell";
-    row.appendChild(cell);
-  }
-  grid.appendChild(row);
-}
+    <!-- Message Area (Toast/Modal alternative) -->
+    <div id="message-container" class="absolute top-20 left-1/2 transform -translate-x-1/2 z-50">
+        <div id="status-message" class="px-4 py-2 bg-white text-gray-900 rounded-lg shadow-xl font-bold opacity-0 transition-opacity duration-300">
+            <!-- Messages appear here -->
+        </div>
+    </div>
 
-function submitGuess(){
-  let guessInput=document.getElementById("guess");
-  let guess=guessInput.value.toUpperCase();
-  if(guess.length!==5){alert("Enter 5-letter word!");return;}
-  let row=grid.children[attempts];
-  for(let i=0;i<5;i++){
-    let cell=row.children[i];
-    cell.textContent=guess[i];
-    if(guess[i]===solution[i]) cell.className="cell correct";
-    else if(solution.includes(guess[i])) cell.className="cell present";
-    else cell.className="cell absent";
-  }
-  attempts++;
-  guessInput.value="";
-  if(guess===solution){
-    document.getElementById("message").textContent="🎉 You Win!";
-    guessInput.disabled=true;
-  } else if(attempts===6){
-    document.getElementById("message").textContent=`Game Over! Word was ${solution}`;
-    guessInput.disabled=true;
-  }
-}
-</script>
+    <!-- Game Board (Grid) -->
+    <main id="game-board" class="w-full max-w-sm mb-8 flex-grow">
+        <div id="grid" class="grid grid-rows-6 gap-2">
+            <!-- Tiles will be generated here by JavaScript -->
+        </div>
+    </main>
+
+    <!-- Keyboard -->
+    <div id="keyboard-container" class="w-full max-w-xl pb-4">
+        <div id="keyboard" class="flex flex-col gap-1.5 p-2 bg-[#161b22] rounded-xl shadow-2xl">
+            <!-- Row 1 -->
+            <div class="flex justify-center gap-1.5">
+                <button class="key w-1/12" data-key="Q">Q</button>
+                <button class="key w-1/12" data-key="W">W</button>
+                <button class="key w-1/12" data-key="E">E</button>
+                <button class="key w-1/12" data-key="R">R</button>
+                <button class="key w-1/12" data-key="T">T</button>
+                <button class="key w-1/12" data-key="Y">Y</button>
+                <button class="key w-1/12" data-key="U">U</button>
+                <button class="key w-1/12" data-key="I">I</button>
+                <button class="key w-1/12" data-key="O">O</button>
+                <button class="key w-1/12" data-key="P">P</button>
+            </div>
+            <!-- Row 2 -->
+            <div class="flex justify-center gap-1.5">
+                <!-- Spacer to center the row -->
+                <div class="w-1/24"></div>
+                <button class="key w-1/12" data-key="A">A</button>
+                <button class="key w-1/12" data-key="S">S</button>
+                <button class="key w-1/12" data-key="D">D</button>
+                <button class="key w-1/12" data-key="F">F</button>
+                <button class="key w-1/12" data-key="G">G</button>
+                <button class="key w-1/12" data-key="H">H</button>
+                <button class="key w-1/12" data-key="J">J</button>
+                <button class="key w-1/12" data-key="K">K</button>
+                <button class="key w-1/12" data-key="L">L</button>
+                <div class="w-1/24"></div>
+            </div>
+            <!-- Row 3 -->
+            <div class="flex justify-center gap-1.5">
+                <button class="key w-[10%] text-sm" data-key="ENTER">ENTER</button>
+                <button class="key w-1/12" data-key="Z">Z</button>
+                <button class="key w-1/12" data-key="X">X</button>
+                <button class="key w-1/12" data-key="C">C</button>
+                <button class="key w-1/12" data-key="V">V</button>
+                <button class="key w-1/12" data-key="B">B</button>
+                <button class="key w-1/12" data-key="N">N</button>
+                <button class="key w-1/12" data-key="M">M</button>
+                <button class="key w-[10%] text-sm" data-key="BACKSPACE">⌫</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Game Logic -->
+    <script>
+        // --- Configuration and State ---
+        const WORD_LENGTH = 5;
+        const MAX_GUESSES = 6;
+
+        // Simple word list for demonstration. In a real app, this would be much larger.
+        const WORD_LIST = ["APPLE", "TRAIN", "HOUSE", "PLANE", "BRICK", "CHAIR", "TABLE", "OCEAN", "FUNDS", "DREAM", "STAMP", "BLAST", "CRANE", "MIGHT", "PRIME", "SHAPE", "POWER", "CRAFT", "EAGLE"];
+
+        const TARGET_WORD = WORD_LIST[Math.floor(Math.random() * WORD_LIST.length)];
+        const VALID_GUESSES = [...WORD_LIST]; // Using a single list for target and valid guesses for simplicity
+
+        let currentRow = 0;
+        let currentTile = 0;
+        let isGameOver = false;
+
+        const gridElement = document.getElementById('grid');
+        const keyboardElement = document.getElementById('keyboard');
+        const statusMessageElement = document.getElementById('status-message');
+        const messageContainerElement = document.getElementById('message-container');
+
+        // Initial setup
+        document.addEventListener('DOMContentLoaded', initializeGame);
+
+        function initializeGame() {
+            createGrid();
+            document.addEventListener('keydown', handleKeyPress);
+            keyboardElement.addEventListener('click', handleVirtualKeyPress);
+            console.log("Target Word (for testing):", TARGET_WORD);
+        }
+
+        // --- Grid Generation ---
+        function createGrid() {
+            gridElement.innerHTML = '';
+            for (let r = 0; r < MAX_GUESSES; r++) {
+                const row = document.createElement('div');
+                row.className = 'grid grid-cols-5 gap-2';
+                row.setAttribute('data-row', r);
+                for (let c = 0; c < WORD_LENGTH; c++) {
+                    const tileContainer = document.createElement('div');
+                    tileContainer.className = 'tile-container';
+                    const tile = document.createElement('div');
+                    tile.className = 'tile rounded-lg';
+                    tile.setAttribute('data-col', c);
+                    tileContainer.appendChild(tile);
+                    row.appendChild(tileContainer);
+                }
+                gridElement.appendChild(row);
+            }
+        }
+
+        // --- Input Handlers ---
+        function handleKeyPress(event) {
+            if (isGameOver) return;
+            const key = event.key.toUpperCase();
+
+            if (key === 'ENTER') {
+                checkGuess();
+            } else if (key === 'BACKSPACE' || key === 'DELETE') {
+                deleteLetter();
+            } else if (key.length === 1 && /[A-Z]/.test(key)) {
+                addLetter(key);
+            }
+        }
+
+        function handleVirtualKeyPress(event) {
+            if (isGameOver) return;
+            const button = event.target.closest('button.key');
+            if (!button) return;
+
+            const key = button.dataset.key;
+
+            if (key === 'ENTER') {
+                checkGuess();
+            } else if (key === 'BACKSPACE') {
+                deleteLetter();
+            } else if (key.length === 1 && /[A-Z]/.test(key)) {
+                addLetter(key);
+            }
+        }
+
+        // --- Core Game Logic ---
+        function addLetter(letter) {
+            if (currentTile < WORD_LENGTH) {
+                const tile = getTile(currentRow, currentTile);
+                tile.textContent = letter;
+                tile.classList.add('filled-tile');
+                currentTile++;
+            }
+        }
+
+        function deleteLetter() {
+            if (currentTile > 0) {
+                currentTile--;
+                const tile = getTile(currentRow, currentTile);
+                tile.textContent = '';
+                tile.classList.remove('filled-tile');
+                // Remove potential shake class from previous validation attempts
+                getCurrentRowElement().classList.remove('shake');
+            }
+        }
+
+        function checkGuess() {
+            if (currentTile < WORD_LENGTH) {
+                // Not enough letters, shake the row and show message
+                showMessage("Not enough letters!", 1000);
+                shakeRow(currentRow);
+                return;
+            }
+
+            const currentGuess = getCurrentGuess();
+            
+            // Optional: Check if the word is in the dictionary (VALID_GUESSES)
+            // if (!VALID_GUESSES.includes(currentGuess)) {
+            //     showMessage("Not in word list!", 1000);
+            //     shakeRow(currentRow);
+            //     return;
+            // }
+
+            // Process the guess and provide feedback
+            processGuess(currentGuess);
+
+            if (currentGuess === TARGET_WORD) {
+                handleWin();
+            } else if (currentRow === MAX_GUESSES - 1) {
+                handleLoss();
+            } else {
+                // Move to the next row
+                currentRow++;
+                currentTile = 0;
+            }
+        }
+
+        function processGuess(guess) {
+            const rowElement = getCurrentRowElement();
+            const tiles = Array.from(rowElement.querySelectorAll('.tile'));
+
+            // Use a temporary map to track available letters in the target word
+            // This prevents incorrect 'present' marking when the letter appears multiple times
+            const targetMap = {};
+            for (const char of TARGET_WORD) {
+                targetMap[char] = (targetMap[char] || 0) + 1;
+            }
+
+            // 1. Mark CORRECT (Green) letters first
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                if (guess[i] === TARGET_WORD[i]) {
+                    tiles[i].setAttribute('data-state', 'correct');
+                    targetMap[guess[i]]--;
+                }
+            }
+
+            // 2. Mark PRESENT (Yellow) and ABSENT (Gray)
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                const tileState = tiles[i].getAttribute('data-state');
+
+                // If already marked correct, skip
+                if (tileState === 'correct') {
+                    applyTileStyle(tiles[i], 'correct', i);
+                    updateKeyStyle(guess[i], 'correct');
+                    continue;
+                }
+
+                // Check for present
+                if (TARGET_WORD.includes(guess[i]) && targetMap[guess[i]] > 0) {
+                    tiles[i].setAttribute('data-state', 'present');
+                    targetMap[guess[i]]--;
+                    applyTileStyle(tiles[i], 'present', i);
+                    updateKeyStyle(guess[i], 'present');
+                } else {
+                    // Absent
+                    tiles[i].setAttribute('data-state', 'absent');
+                    applyTileStyle(tiles[i], 'absent', i);
+                    updateKeyStyle(guess[i], 'absent');
+                }
+            }
+        }
+
+        function applyTileStyle(tile, stateClass, index) {
+            setTimeout(() => {
+                tile.classList.add('flip-in', stateClass);
+            }, index * 250); // Delay flip animation
+        }
+
+        // --- UI Updates and Helpers ---
+        function updateKeyStyle(keyLetter, newState) {
+            const keyButton = document.querySelector(`button[data-key="${keyLetter}"]`);
+            if (!keyButton) return;
+
+            // Define priority: correct > present > absent
+            const priority = { 'correct': 3, 'present': 2, 'absent': 1, 'default': 0 };
+            const currentState = keyButton.dataset.state || 'default';
+
+            if (priority[newState] > priority[currentState]) {
+                // Remove old state classes
+                keyButton.classList.remove('correct', 'present', 'absent');
+                // Add new state class and update data-state
+                keyButton.classList.add(newState);
+                keyButton.dataset.state = newState;
+            }
+        }
+
+        function getCurrentRowElement() {
+            return document.querySelector(`div[data-row="${currentRow}"]`);
+        }
+
+        function getTile(r, c) {
+            return document.querySelector(`div[data-row="${r}"] .tile-container:nth-child(${c + 1}) .tile`);
+        }
+
+        function getCurrentGuess() {
+            let guess = '';
+            for (let i = 0; i < WORD_LENGTH; i++) {
+                guess += getTile(currentRow, i).textContent;
+            }
+            return guess;
+        }
+
+        function showMessage(text, duration = 2000) {
+            statusMessageElement.textContent = text;
+            statusMessageElement.classList.remove('opacity-0');
+            statusMessageElement.classList.add('opacity-100');
+
+            // Hide the message after the duration
+            setTimeout(() => {
+                statusMessageElement.classList.remove('opacity-100');
+                statusMessageElement.classList.add('opacity-0');
+            }, duration);
+        }
+
+        function shakeRow(row) {
+            const rowElement = document.querySelector(`div[data-row="${row}"]`);
+            rowElement.classList.add('shake');
+            // Remove the shake class after animation to allow it to be re-triggered
+            setTimeout(() => {
+                rowElement.classList.remove('shake');
+            }, 500);
+        }
+
+        // --- Game End Handlers ---
+        function handleWin() {
+            isGameOver = true;
+            // Highlight the entire winning row
+            const tiles = Array.from(getCurrentRowElement().querySelectorAll('.tile'));
+            tiles.forEach((tile, index) => {
+                // Little bounce animation (optional, but fun)
+                setTimeout(() => {
+                    tile.style.transform = 'translateY(-10px)';
+                    setTimeout(() => {
+                        tile.style.transform = 'translateY(0)';
+                    }, 150);
+                }, index * 100 + 1000); // Wait for flip animation to finish
+            });
+
+            setTimeout(() => {
+                showMessage("🎉 You guessed it! Excellent!", 3000);
+            }, 1500);
+        }
+
+        function handleLoss() {
+            isGameOver = true;
+            setTimeout(() => {
+                showMessage(`Game Over! The word was: ${TARGET_WORD}`, 4000);
+            }, 1000);
+        }
+
+    </script>
+
 </body>
 </html>
+
