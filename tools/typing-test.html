@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Typing Speed Test</title>
+<style>body{font-family:Arial;padding:20px;}input{width:100%;}</style>
+</head>
+<body>
+<h1>Typing Speed Test</h1>
+<p id="text">Type this sentence as fast as you can.</p>
+<input id="input" type="text">
+<p>Time: <span id="time">0</span>s</p>
+<script>
+const input=document.getElementById('input');
+let start=null;
+input.addEventListener('input',()=>{
+  if(!start) start=Date.now();
+  let words=input.value.trim().split(/\s+/).length;
+  let seconds=Math.floor((Date.now()-start)/1000);
+  document.getElementById('time').textContent=seconds;
+});
+</script>
+</body>
+</html>
