@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Text to Speech</title>
+<style>body{font-family:Arial;padding:20px;}textarea{width:100%;height:150px;}</style>
+</head>
+<body>
+<h1>Text to Speech</h1>
+<textarea id="text"></textarea><br><br>
+<button onclick="speak()">Speak</button>
+<script>
+function speak(){
+  let msg=new SpeechSynthesisUtterance(document.getElementById('text').value);
+  window.speechSynthesis.speak(msg);
+}
+</script>
+</body>
+</html>
