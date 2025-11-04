@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Word Scrambler</title>
+<style>body{font-family:Arial;padding:20px;}input,textarea{width:100%;}</style>
+</head>
+<body>
+<h1>Word Scrambler</h1>
+<textarea id="text"></textarea><br><br>
+<button onclick="scramble()">Scramble</button>
+<p>Output: <span id="output"></span></p>
+<script>
+function scramble(){
+  let text=document.getElementById('text').value;
+  let words=text.split(/\s+/);
+  for(let i=words.length-1;i>0;i--){
+    let j=Math.floor(Math.random()*(i+1));
+    [words[i],words[j]]=[words[j],words[i]];
+  }
+  document.getElementById('output').textContent=words.join(' ');
+}
+</script>
+</body>
+</html>
